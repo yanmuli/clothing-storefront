@@ -1,0 +1,43 @@
+name: Deploy Storefront to Cloud Server
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy Storefront
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Deploy to server
+        env:
+          SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y sshpass
+          SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+          
+          sshpass -p "$SERVER_PASSWORD" scp $SSH_OPTS -r . ubuntu@43.134.101.198:/var/www/medusa-app/my-medusa-store-storefront
+          
+          sshpass -p "$SERVER_PASSWORD" ssh $SSH_OPTS ubuntu@43.134.101.198 << 'EOF'
+            cd /var/www/medusa-app/my-medusa-store-storefront
+            export PATH="/home/ubuntu/.nvm/versions/node/v22.22.1/bin:$PATH"
+            npm install
+          EOF
+          
+          sshpass -p "$SERVER_PASSWORD" ssh $SSH_OPTS ubuntu@43.134.101.198 << 'EOF'
+            cd /var/www/medusa-app/my-medusa-store-storefront
+            export PATH="/home/ubuntu/.nvm/versions/node/v22.22.1/bin:$PATH"
+            npm run build
+          EOF
+          
+          sshpass -p "$SERVER_PASSWORD" ssh $SSH_OPTS ubuntu@43.134.101.198 << 'EOF'
+            cd /var/www/medusa-app/my-medusa-store-storefront
+            export PATH="/home/ubuntu/.nvm/versions/node/v22.22.1/bin:$PATH"
+            pm2 restart ecosystem.config.js || pm2 start ecosystem.config.js
+            pm2 save
+          EOF
