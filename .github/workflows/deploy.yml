@@ -25,19 +25,16 @@ jobs:
           
           sshpass -p "$SERVER_PASSWORD" ssh $SSH_OPTS ubuntu@43.134.101.198 << 'EOF'
             cd /var/www/medusa-app/storefront
-            export PATH="/home/ubuntu/.nvm/versions/node/v22.22.1/bin:$PATH"
             npm install
           EOF
-          
           sshpass -p "$SERVER_PASSWORD" ssh $SSH_OPTS ubuntu@43.134.101.198 << 'EOF'
+            export NODE_ENV=production
             cd /var/www/medusa-app/storefront
-            export PATH="/home/ubuntu/.nvm/versions/node/v22.22.1/bin:$PATH"
             npm run build
           EOF
-          
           sshpass -p "$SERVER_PASSWORD" ssh $SSH_OPTS ubuntu@43.134.101.198 << 'EOF'
-            cd /var/www/medusa-app/storefront
             export PATH="/home/ubuntu/.nvm/versions/node/v22.22.1/bin:$PATH"
+            cd /var/www/medusa-app/storefront
             pm2 restart ecosystem.config.js || pm2 start ecosystem.config.js
             pm2 save
           EOF
